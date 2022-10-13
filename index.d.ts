@@ -1,0 +1,1 @@
+export function humanizeCronInChinese(cron: string) : string;

@@ -1,0 +1,32 @@
+{
+  "name": "cron-chinese",
+  "version": "1.0.0",
+  "description": "cron to chinese humanizer",
+  "main": "index.js",
+  "type": "module",
+  "types": "index.d.ts",
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikesnowy/cron-chinese.git"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "keywords": [
+    "cron",
+    "chinese"
+  ],
+  "author": "ikesnowy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ikesnowy/cron-chinese/issues"
+  },
+  "homepage": "https://github.com/ikesnowy/cron-chinese#readme",
+  "devDependencies": {
+    "jasmine": "^4.4.0"
+  }
+}
