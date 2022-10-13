@@ -55,17 +55,17 @@ function compileDatePart(date) {
     } else if (date.anyCount === 1) {
         if (date.month.isAny) {
             // 每月 X 日或周 X
-            date.text = '每月' + parseDayInMonthToken(date.dayInMonth) + '或' + parseDayInWeekToken(date.dayInWeek);
+            date.text = '每月' + parseDayInMonthToken(date.dayInMonth.raw) + '或' + parseDayInWeekToken(date.dayInWeek.raw);
         } else if (date.dayInMonth.isAny) {
-            // X 月周 X
-            date.text = parseMonthToken(date.month) + parseDayInWeekToken(date.dayInWeek);
+            // X 月的每周 X
+            date.text = parseMonthToken(date.month.raw) + '的每' + parseDayInWeekToken(date.dayInWeek.raw);
         } else {
             // X 月 X 日
-            date.text = parseMonthToken(date.month) + parseDayInMonthToken(date.dayInMonth);
+            date.text = parseMonthToken(date.month.raw) + parseDayInMonthToken(date.dayInMonth.raw);
         }
     } else {
         // X月X日或周X
-        date.text = parseMonthToken(date.month) + parseDayInMonthToken(date.dayInMonth) + '或' + parseDayInWeekToken(date.dayInWeek);
+        date.text = parseMonthToken(date.month.raw) + parseDayInMonthToken(date.dayInMonth.raw) + '或' + parseDayInWeekToken(date.dayInWeek.raw);
     }
 
     return date;
@@ -91,12 +91,12 @@ function compileTimePart(time) {
             if (time.hour.hasStepping) {
                 const parts = time.hour.raw.split('/');
                 if (time.hour.hasRange || time.hour.hasList) {
-                    time.text = parts[0] + '点的每一分钟(间隔' + parts[1] + '小时)';
+                    time.text = parts[0] + '时的每一分钟(间隔' + parts[1] + '小时)';
                 } else {
                     time.text = '每隔' + time.minute.raw.split('/')[1] + '分钟';
                 }
             } else {
-                time.text = time.hour.raw + '点的每一分钟';
+                time.text = time.hour.raw + '时的每一分钟';
             }
         }
     } else {
@@ -105,12 +105,12 @@ function compileTimePart(time) {
             if (time.hour.hasStepping) {
                 const parts = time.hour.raw.split('/');
                 if (time.hour.hasList || time.hour.hasRange) {
-                    hourString = parts[0] + '点(间隔' + parts[1] + '小时)'
+                    hourString = parts[0] + '时(间隔' + parts[1] + '小时)'
                 } else {
                     hourString = '每' + parts[1] + '小时';
                 }
             } else {
-                hourString = time.hour.raw + '点';
+                hourString = time.hour.raw + '时';
             }
 
             let minuteString;
@@ -140,10 +140,10 @@ function compileTimePart(time) {
                     time.text = time.hour.raw.padStart(2, '0') + ':' + time.minute.raw.padStart(2, '0');
                 }
             } else {
-                time.text = time.hour.raw + '点的第' + time.minute.raw + '分钟';
+                time.text = time.hour.raw + '时的第' + time.minute.raw + '分钟';
             }
         } else {
-            time.text = time.hour.raw + '点的第' + time.minute.raw + '分钟';
+            time.text = time.hour.raw + '时的第' + time.minute.raw + '分钟';
         }
     }
 
@@ -154,6 +154,10 @@ function parseMonthToken(month) {
     if (month.indexOf('/') >= 0) {
         const parts = month.split('/');
         return parts[0] === '*' ? ('每' + parts[1] + '月') : (parts[0] + '月(间隔' + parts[1] + '月)');
+    }
+
+    if (isNaN(Number(month[0]))) {
+        return (monthMap.indexOf(month.toUpperCase()) + 1) + '月';
     }
     return month + '月';
 }
@@ -180,7 +184,15 @@ function parseDayInWeekToken(dayInWeek) {
         return dayInWeek.split('-').map(x => parseDayInWeekToken(x)).join('~');
     }
 
-    return '周' + dayInWeekName[Number(dayInWeek)];
+    let index = Number(dayInWeek);
+    if (isNaN(index)) {
+        // 'SUN' like
+        index = dayInWeekMap.indexOf(dayInWeek.toUpperCase());
+    }
+
+    return '周' + dayInWeekName[index];
 }
 
 const dayInWeekName = ['日', '一', '二', '三', '四', '五', '六']
+const dayInWeekMap = ['SUN', 'MON', 'TUE', 'WEB', 'THU', 'FRI', 'SAT'];
+const monthMap = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
