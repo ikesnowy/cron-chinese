@@ -1,6 +1,6 @@
 {
   "name": "cron-chinese",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "cron to chinese humanizer",
   "main": "index.js",
   "type": "module",
