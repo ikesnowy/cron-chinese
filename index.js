@@ -177,7 +177,7 @@ function parseDayInWeekToken(dayInWeek) {
     }
 
     if (dayInWeek.indexOf('-') >= 0) {
-        return dayInWeek.split('').map(x => parseDayInWeekToken(x)).join('-');
+        return dayInWeek.split('-').map(x => parseDayInWeekToken(x)).join('~');
     }
 
     return '周' + dayInWeekName[Number(dayInWeek)];

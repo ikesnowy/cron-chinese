@@ -16,4 +16,13 @@ describe('cron any tests', function () {
     it('every midnight', function () {
         expect(humanizeCronInChinese('0 0 * * *')).toBe('每日00:00');
     });
+    it('at minute 30', function () {
+        expect(humanizeCronInChinese('30 * * * *')).toBe('每小时的第30分钟');
+    });
+    it('every hour in range', function () {
+        expect(humanizeCronInChinese('0 9-17 * * *')).toBe('每日9-17点的第0分钟');
+    });
+    it('every weekday', function () {
+        expect(humanizeCronInChinese('0 0 * * 1-5')).toBe('每周一~周五00:00');
+    })
 })
