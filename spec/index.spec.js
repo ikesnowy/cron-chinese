@@ -1,6 +1,6 @@
-import {humanizeCronInChinese} from "../index.js";
+import { humanizeCronInChinese } from '../index.js';
 
-describe('cron any tests', function () {
+describe('cron translation tests', function () {
     it('every minute', function () {
         expect(humanizeCronInChinese('* * * * *')).toBe('每分钟');
     });
@@ -9,7 +9,7 @@ describe('cron any tests', function () {
     });
     it('every odd minute', function () {
         expect(humanizeCronInChinese('1-59/2 * * * *')).toBe('每小时的第1-59分钟(间隔2分钟)');
-    })
+    });
     it('once a month', function () {
         expect(humanizeCronInChinese('0 0 1 * *')).toBe('每月1日00:00');
     });
@@ -46,4 +46,10 @@ describe('cron any tests', function () {
     it('two ranges in a day with different hours', function () {
         expect(humanizeCronInChinese('*/5 14,18 * * *')).toBe('每日14,18时的每5分钟');
     });
-})
+    it('weekday midnight', function () {
+        expect(humanizeCronInChinese('0 23 * * MON-fri')).toBe('每周一~周五23:00');
+    });
+    it('month name range', function () {
+        expect(humanizeCronInChinese('23 12 * JAN-feb *')).toBe('1-2月每日12:23');
+    });
+});

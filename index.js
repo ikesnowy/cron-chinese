@@ -1,13 +1,9 @@
 export function humanizeCronInChinese(cron) {
     const tokens = cron.trim().split(' ');
-    if (tokens.length < 5) {
-        throw 'invalid cron token';
-    }
-
     const cronStruct = {
         time: {
             minute: compileNode(tokens[0]),
-            hour: compileNode(tokens[1]),
+            hour: compileNode(tokens[1])
         },
         date: {
             dayInMonth: compileNode(tokens[2]),
@@ -28,7 +24,7 @@ export function humanizeCronInChinese(cron) {
 }
 
 function compileNode(raw) {
-    const compiled = {raw};
+    const compiled = { raw };
     compiled.isAny = raw === '*';
     compiled.hasStepping = raw.indexOf('/') >= 0;
     compiled.hasList = raw.indexOf(',') >= 0;
@@ -44,7 +40,7 @@ function compileDatePart(date) {
     } else if (date.anyCount === 2) {
         if (date.month.isAny === false) {
             // X 月每日
-            date.text = parseMonthToken(date.month.raw);
+            date.text = parseMonthToken(date.month.raw) + '每日';
         } else if (date.dayInMonth.isAny === false) {
             // 每月 X 日
             date.text = '每月' + parseDayInMonthToken(date.dayInMonth.raw);
@@ -105,7 +101,7 @@ function compileTimePart(time) {
             if (time.hour.hasStepping) {
                 const parts = time.hour.raw.split('/');
                 if (time.hour.hasList || time.hour.hasRange) {
-                    hourString = parts[0] + '时(间隔' + parts[1] + '小时)'
+                    hourString = parts[0] + '时(间隔' + parts[1] + '小时)';
                 } else {
                     hourString = '每' + parts[1] + '小时';
                 }
@@ -151,14 +147,15 @@ function compileTimePart(time) {
 }
 
 function parseMonthToken(month) {
+    // replace month name if any
+    monthMap.forEach((x, i) => {
+        month = month.replace(x, (i + 1).toString());
+    });
     if (month.indexOf('/') >= 0) {
         const parts = month.split('/');
         return parts[0] === '*' ? ('每' + parts[1] + '月') : (parts[0] + '月(间隔' + parts[1] + '月)');
     }
 
-    if (isNaN(Number(month[0]))) {
-        return (monthMap.indexOf(month.toUpperCase()) + 1) + '月';
-    }
     return month + '月';
 }
 
@@ -171,10 +168,13 @@ function parseDayInMonthToken(dayInMonth) {
 }
 
 function parseDayInWeekToken(dayInWeek) {
+    dayInWeekMap.forEach((x, i) => {
+        dayInWeek = dayInWeek.replace(x, i.toString());
+    });
     if (dayInWeek.indexOf(',') >= 0) {
         if (dayInWeek.indexOf('-') < 0) {
             // 周三、四、六
-            return '周' + dayInWeek.split(',').map(x => dayInWeekName[Number(x)]).join('、');
+            return '周' + dayInWeek.split(',').map(x => dayInWeekNameMap[Number(x)]).join('、');
         }
 
         return dayInWeek.split(',').map(x => parseDayInWeekToken(x)).join(',');
@@ -184,15 +184,9 @@ function parseDayInWeekToken(dayInWeek) {
         return dayInWeek.split('-').map(x => parseDayInWeekToken(x)).join('~');
     }
 
-    let index = Number(dayInWeek);
-    if (isNaN(index)) {
-        // 'SUN' like
-        index = dayInWeekMap.indexOf(dayInWeek.toUpperCase());
-    }
-
-    return '周' + dayInWeekName[index];
+    return '周' + dayInWeekNameMap[Number(dayInWeek)];
 }
 
-const dayInWeekName = ['日', '一', '二', '三', '四', '五', '六']
-const dayInWeekMap = ['SUN', 'MON', 'TUE', 'WEB', 'THU', 'FRI', 'SAT'];
-const monthMap = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const dayInWeekNameMap = ['日', '一', '二', '三', '四', '五', '六'];
+const dayInWeekMap = ['SUN', 'MON', 'TUE', 'WEB', 'THU', 'FRI', 'SAT'].map(x => new RegExp(x, 'ig'));
+const monthMap = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].map(x => new RegExp(x, 'ig'));
