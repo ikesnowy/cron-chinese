@@ -14,7 +14,7 @@
     "url": "git+https://github.com/ikesnowy/cron-chinese.git"
   },
   "scripts": {
-    "test": "jasmine"
+    "test": "vitest run"
   },
   "keywords": [
     "cron",
@@ -27,6 +27,6 @@
   },
   "homepage": "https://github.com/ikesnowy/cron-chinese#readme",
   "devDependencies": {
-    "jasmine": "^4.4.0"
+    "vitest": "^4.1.9"
   }
 }

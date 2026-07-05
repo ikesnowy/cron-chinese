@@ -29,7 +29,6 @@ function compileNode(raw) {
     compiled.hasStepping = raw.indexOf('/') >= 0;
     compiled.hasList = raw.indexOf(',') >= 0;
     compiled.hasRange = raw.indexOf('-') >= 0;
-    compiled.values = raw.split(',');
     return compiled;
 }
 
@@ -77,8 +76,10 @@ function compileTimePart(time) {
                 const parts = time.minute.raw.split('/');
                 if (time.minute.hasRange || time.minute.hasList) {
                     time.text = '每小时的第' + parts[0] + '分钟(间隔' + parts[1] + '分钟)';
+                } else if (parts[0] === '*') {
+                    time.text = '每隔' + parts[1] + '分钟';
                 } else {
-                    time.text = '每隔' + time.minute.raw.split('/')[1] + '分钟';
+                    time.text = '每小时的第' + parts[0] + '分钟起,每隔' + parts[1] + '分钟';
                 }
             } else {
                 time.text = '每小时的第' + time.minute.raw + '分钟';
@@ -89,7 +90,7 @@ function compileTimePart(time) {
                 if (time.hour.hasRange || time.hour.hasList) {
                     time.text = parts[0] + '时的每一分钟(间隔' + parts[1] + '小时)';
                 } else {
-                    time.text = '每隔' + time.minute.raw.split('/')[1] + '分钟';
+                    time.text = '每隔' + parts[1] + '小时';
                 }
             } else {
                 time.text = time.hour.raw + '时的每一分钟';
@@ -162,7 +163,7 @@ function parseMonthToken(month) {
 function parseDayInMonthToken(dayInMonth) {
     if (dayInMonth.indexOf('/') >= 0) {
         const parts = dayInMonth.split('/');
-        return parts[0] === '*' ? ('每' + parts[1] + '日') : (parts[1] + '日(间隔' + parts[1] + '日)');
+        return parts[0] === '*' ? ('每' + parts[1] + '日') : (parts[0] + '日(间隔' + parts[1] + '日)');
     }
     return dayInMonth + '日';
 }
@@ -188,5 +189,5 @@ function parseDayInWeekToken(dayInWeek) {
 }
 
 const dayInWeekNameMap = ['日', '一', '二', '三', '四', '五', '六'];
-const dayInWeekMap = ['SUN', 'MON', 'TUE', 'WEB', 'THU', 'FRI', 'SAT'].map(x => new RegExp(x, 'ig'));
+const dayInWeekMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(x => new RegExp(x, 'ig'));
 const monthMap = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].map(x => new RegExp(x, 'ig'));
