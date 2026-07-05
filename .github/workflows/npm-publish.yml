@@ -1,14 +1,16 @@
-# Publishes to npm on release creation via Trusted Publishing (OIDC).
-# No long-lived npm token needed: authentication uses OIDC through the
-# `id-token: write` permission, and npm CLI auto-detects the OIDC environment.
+# Publishes to npm when a version tag (vX.Y.Z) is pushed. Pushing tag `v1.2.1`
+# publishes version `1.2.1`: the leading 'v' is stripped and written into
+# package.json before publishing. Authentication uses Trusted Publishing (OIDC)
+# via the `id-token: write` permission — no long-lived npm token is needed.
 # Configure the trusted publisher on npmjs.com (repo + workflow filename
 # `npm-publish.yml` + optional environment). Docs: https://docs.npmjs.com/trusted-publishers/
 
 name: Node.js Package
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v[0-9]*'
 
 permissions:
   contents: read
@@ -25,4 +27,13 @@ jobs:
           registry-url: https://registry.npmjs.org/
           cache: npm
       - run: npm ci
+      - name: Set package version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a valid semver (expected vX.Y.Z)"
+            exit 1
+          fi
+          echo "Publishing version $VERSION"
+          npm version "$VERSION" --no-git-tag-version
       - run: npm publish
