@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>cron-chinese · Cron 表达式中文转换</title>
+    <meta name="description" content="将 Cron 表达式实时转换为中文描述。由 cron-chinese 库在浏览器中现场计算。"/>
+    <meta name="color-scheme" content="dark"/>
+    <meta property="og:title" content="cron-chinese · Cron 中文转换"/>
+    <meta property="og:description" content="将 Cron 表达式实时转换为中文描述。"/>
+    <meta property="og:type" content="website"/>
+    <link rel="icon"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c0c0e'/%3E%3Ctext x='16' y='24' font-size='24' text-anchor='middle' fill='%23ffb454' font-family='monospace' font-weight='700'%3E*%3C/text%3E%3C/svg%3E"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap"
+          rel="stylesheet"/>
+    <style>
+        :root {
+            --bg: #0c0c0e;
+            --bg-soft: #131316;
+            --ink: #ece9e2;
+            --muted: #8a8780;
+            --dim: #54524d;
+            --accent: #ffb454;
+            --accent-soft: rgba(255, 180, 84, .12);
+            --accent-glow: rgba(255, 180, 84, .35);
+            --danger: #ff8a65;
+            --line: rgba(236, 233, 226, .10);
+            --line-strong: rgba(236, 233, 226, .18);
+            --serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", serif;
+            --mono: "Martian Mono", ui-monospace, "SFMono-Regular", "Consolas", monospace;
+            --sans: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans), monospace;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            background-image: radial-gradient(120% 85% at 50% -15%, rgba(255, 180, 84, .10), transparent 55%),
+            radial-gradient(70% 60% at 110% 10%, rgba(255, 110, 40, .06), transparent 60%),
+            radial-gradient(90% 70% at 50% 120%, rgba(0, 0, 0, .55), transparent 60%);
+        }
+
+        /* atmosphere overlays */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 60;
+            background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .022) 0 1px, transparent 1px 3px);
+            mix-blend-mode: overlay;
+            opacity: .6;
+        }
+
+        .grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 59;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* topbar */
+        .links {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .links a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .links a::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            background: currentColor;
+            opacity: .5;
+            transform: rotate(45deg)
+        }
+
+        .links a:hover {
+            color: var(--accent)
+        }
+
+        /* stage */
+        .stage {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: clamp(44px, 7vw, 92px) clamp(20px, 5vw, 56px) 64px;
+            position: relative;
+            z-index: 4;
+        }
+
+        /* prompt / input */
+        .prompt-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid var(--line-strong);
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(0, 0, 0, .18));
+            padding: 18px 22px;
+            transition: border-color .25s, box-shadow .25s, background .25s;
+        }
+
+        .prompt-row:focus-within {
+            border-color: rgba(255, 180, 84, .5);
+            background: linear-gradient(180deg, rgba(255, 180, 84, .04), rgba(0, 0, 0, .2));
+            box-shadow: 0 0 0 4px rgba(255, 180, 84, .07), 0 24px 60px -28px var(--accent-glow);
+        }
+
+        .prompt {
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: clamp(18px, 2.6vw, 24px);
+            font-weight: 500;
+            text-shadow: 0 0 14px var(--accent-glow)
+        }
+
+        .cron-input {
+            flex: 1;
+            min-width: 0;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: clamp(18px, 2.6vw, 24px);
+            font-weight: 500;
+            caret-color: var(--accent);
+            letter-spacing: .02em;
+        }
+
+        .cron-input::placeholder {
+            color: var(--dim)
+        }
+
+        .legend {
+            display: flex;
+            gap: clamp(22px, 8.5vw, 90px);
+            font-family: var(--mono), monospace;
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: var(--dim);
+            margin: 14px 6px 0;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px
+        }
+
+        .legend span::before {
+            content: attr(data-i);
+            color: var(--accent);
+            opacity: .55;
+            font-weight: 700
+        }
+
+        /* result */
+        .result {
+            margin-top: clamp(40px, 6vw, 64px);
+            position: relative;
+        }
+
+        .output {
+            font-family: var(--serif);
+            font-weight: 900;
+            font-size: clamp(2.4rem, 8.5vw, 5.9rem);
+            line-height: 1.14;
+            letter-spacing: .004em;
+            color: var(--ink);
+            min-height: 1.3em;
+            text-wrap: balance;
+            word-break: break-word;
+            transition: color .2s;
+        }
+
+        .output.placeholder {
+            color: var(--dim)
+        }
+
+        .output.flick {
+            animation: flick .22s ease-out
+        }
+
+        @keyframes flick {
+            0% {
+                opacity: .35;
+                transform: translateY(4px)
+            }
+            100% {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .copy {
+            margin-top: 22px;
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: .06em;
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid var(--line-strong);
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .copy:hover {
+            color: var(--accent);
+            border-color: rgba(255, 180, 84, .5)
+        }
+
+        /* examples */
+        .examples {
+            margin-top: clamp(56px, 8vw, 92px);
+        }
+
+        .examples-label {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .examples-label::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 11px;
+            font-family: var(--mono);
+            background: var(--bg-soft);
+            border: 1px solid var(--line-strong);
+            border-radius: 11px;
+            padding: 11px 16px;
+            cursor: pointer;
+            transition: transform .18s cubic-bezier(.2, .7, .2, 1), border-color .18s, background .18s, color .18s;
+        }
+
+        .chip .cron {
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--ink);
+            letter-spacing: .01em
+        }
+
+        .chip .arr {
+            color: var(--dim);
+            font-size: 12px
+        }
+
+        .chip .zh {
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        .chip:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 180, 84, .5);
+            background: var(--accent-soft)
+        }
+
+        .chip:hover .cron {
+            color: var(--accent)
+        }
+
+        .chip:hover .zh {
+            color: var(--ink)
+        }
+
+        .chip.active {
+            border-color: var(--accent);
+            background: var(--accent-soft)
+        }
+
+        .chip.active .cron {
+            color: var(--accent)
+        }
+
+        .chip.active .zh {
+            color: var(--ink)
+        }
+
+        /* load reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(16px);
+            animation: reveal .8s cubic-bezier(.16, .7, .2, 1) forwards
+        }
+
+        @keyframes reveal {
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media (max-width: 560px) {
+            .legend {
+                gap: clamp(14px, 9vw, 30px);
+                font-size: 10px
+            }
+
+            .prompt-row {
+                padding: 16px 16px;
+                gap: 12px
+            }
+
+            .topbar {
+                padding: 18px 18px
+            }
+
+            .foot {
+                padding: 20px 18px
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .reveal {
+                opacity: 1;
+                transform: none
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="scanlines" aria-hidden="true"></div>
+<main class="stage">
+    <section class="hero">
+        <nav class="links">
+            <span class="prompt">cron-chinese</span>
+            <a href="https://www.npmjs.com/package/cron-chinese" target="_blank" rel="noopener">npm</a>
+            <a href="https://github.com/ikesnowy/cron-chinese" target="_blank" rel="noopener">github</a>
+        </nav>
+        <div class="prompt-row reveal" style="animation-delay:.12s">
+            <input id="cron" class="cron-input" type="text" placeholder="* * * * *"
+                   autocomplete="off" autocapitalize="off" autocorrect="off"
+                   spellcheck="false" aria-label="Cron 表达式" autofocus/>
+        </div>
+
+        <div class="result reveal" style="animation-delay:.26s">
+            <div id="output" class="output" aria-live="polite">每分钟</div>
+            <button id="copy" class="copy" type="button">复制结果</button>
+        </div>
+    </section>
+
+    <section class="examples reveal" style="animation-delay:.36s">
+        <div class="examples-label">示例</div>
+        <div id="chips" class="chips"></div>
+    </section>
+</main>
+
+<script type="module">
+    import { humanizeCronInChinese } from './index.js';
+
+    const input = document.getElementById('cron');
+    const output = document.getElementById('output');
+    const copyBtn = document.getElementById('copy');
+    const chipsEl = document.getElementById('chips');
+
+    // 一组覆盖库主要分支的示例（取自 spec/index.spec.js）
+    const EXAMPLES = [
+        '* * * * *',
+        '*/2 * * * *',
+        '*/5 * * * *',
+        '0 0 * * *',
+        '0 0 1 * *',
+        '0 0 * * 1-5',
+        '0 9-17 * * *',
+        '45 4 1,10,20 * *',
+        '0 0 * * FRI',
+        '0 0 1 */3 *',
+        '*/5 */2 * * *',
+        '11 11 11 11 *'
+    ];
+
+    // 库按单个空格切分，这里先把空白归一，避免连续空格产生空 token 而崩溃
+    const normalize = s => s.trim().replace(/\s+/g, ' ');
+    // 恰好 5 个非空白字段
+    const isValid = s => /^\S+(\s+\S+){4}$/.test(s);
+
+    function showResult(zh) {
+        output.classList.remove('placeholder');
+        output.textContent = zh;
+    }
+
+    function showPlaceholder(message) {
+        output.classList.add('placeholder');
+        output.textContent = message;
+    }
+
+    function render() {
+        const value = normalize(input.value);
+        if (value === '') {
+            showPlaceholder('输入一个 Cron 表达式');
+            syncActive();
+            return;
+        }
+        if (!isValid(value)) {
+            showPlaceholder('需要 5 个字段：分  时  日  月  周');
+            syncActive();
+            return;
+        }
+        try {
+            showResult(humanizeCronInChinese(value));
+        } catch {
+            showPlaceholder('无法解析该表达式');
+        }
+        syncActive();
+    }
+
+    function syncActive() {
+        const current = normalize(input.value);
+        for (const chip of chipsEl.children) {
+            chip.classList.toggle('active', chip.dataset.cron === current);
+        }
+    }
+
+    input.addEventListener('input', render);
+
+    // 构建示例：每个 chip 的中文由库现场计算
+    for (const cron of EXAMPLES) {
+        let zh;
+        try {
+            zh = humanizeCronInChinese(cron);
+        } catch {
+            zh = '—';
+        }
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        chip.dataset.cron = cron;
+        chip.innerHTML =
+            `<span class="cron">${cron}</span>` +
+            `<span class="arr" aria-hidden="true">→</span>` +
+            `<span class="zh">${zh}</span>`;
+        chip.addEventListener('click', () => {
+            input.value = cron;
+            render();
+            // 终端式的"刷新"反馈
+            output.classList.remove('flick');
+            void output.offsetWidth; // 强制重排以重启动画
+            output.classList.add('flick');
+            input.focus();
+        });
+        chipsEl.appendChild(chip);
+    }
+
+    copyBtn.addEventListener('click', async () => {
+        const text = output.textContent;
+        if (!text || text === '—') return;
+        try {
+            await navigator.clipboard.writeText(text);
+            copyBtn.textContent = '已复制 ✓';
+            setTimeout(() => {
+                copyBtn.textContent = '复制结果';
+            }, 1400);
+        } catch {
+            copyBtn.textContent = '复制失败';
+            setTimeout(() => {
+                copyBtn.textContent = '复制结果';
+            }, 1400);
+        }
+    });
+
+    // 初始：预填一个表达式，让首屏直接展示效果
+    input.value = '* * * * *';
+    render();
+    try {
+        input.setSelectionRange(input.value.length, input.value.length);
+    } catch {
+    }
+</script>
+</body>
+</html>

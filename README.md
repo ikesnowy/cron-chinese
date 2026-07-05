@@ -4,6 +4,8 @@
 
 [![npm](https://img.shields.io/npm/v/cron-chinese?logo=npm&style=flat-square)](https://www.npmjs.com/package/cron-chinese)
 
+🌍 [在线演示](https://ikesnowy.github.io/cron-chinese/)
+
 ## 如何使用
 
 ```shell
