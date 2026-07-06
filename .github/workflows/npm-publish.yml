@@ -36,4 +36,6 @@ jobs:
           fi
           echo "Publishing version $VERSION"
           npm version "$VERSION" --no-git-tag-version
+      - run: npm run typecheck
+      - run: npm run build
       - run: npm publish

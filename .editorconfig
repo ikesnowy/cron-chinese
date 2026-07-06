@@ -1,0 +1,17 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Code: align the editor ruler with Biome's lineWidth (80).
+[*.{js,cjs,mjs,ts,cts,mts,jsx,tsx,json,jsonc}]
+max_line_length = 80
+
+# Markdown: preserve trailing two-space hard line breaks.
+[*.{md,markdown}]
+trim_trailing_whitespace = false
