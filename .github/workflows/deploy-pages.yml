@@ -23,6 +23,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: pages
@@ -48,6 +49,18 @@ jobs:
           cp index.html _site/
           cp dist/index.js _site/dist/
       - uses: actions/configure-pages@v5
+      - name: Remove stale github-pages artifacts from this run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Re-running this workflow can leave a previous github-pages artifact
+          # behind; deploy-pages@v4 fails if it finds more than one. Clear any
+          # before uploading a fresh one.
+          for id in $(gh api --paginate \
+            repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts \
+            --jq '.artifacts[] | select(.name == "github-pages") | .id'); do
+            gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/"$id" || true
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
