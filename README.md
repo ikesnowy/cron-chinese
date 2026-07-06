@@ -20,6 +20,8 @@ humanizeCronInChinese('0 0 * * *'); // 每日00:00
 humanizeCronInChinese('0 0 1 * *'); // 每月1日00:00
 humanizeCronInChinese('*/2 * * * *'); // 每隔2分钟
 humanizeCronInChinese('45 4 1,10,20 * *') // 每月1,10,20日04:45
+humanizeCronInChinese('0 0 * * */2'); // 每周日、二、四、六00:00
+humanizeCronInChinese('0 0 * * MON-FRI/2'); // 每周一、三、五00:00
 ```
 
 更多示例请查看测试文件：[index.spec.js](https://github.com/ikesnowy/cron-chinese/blob/main/spec/index.spec.js)

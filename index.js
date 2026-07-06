@@ -15,9 +15,9 @@ export function humanizeCronInChinese(cron) {
     cronStruct.date = compileDatePart(cronStruct.date);
     cronStruct.time = compileTimePart(cronStruct.time);
 
-    if (cronStruct.date.anyCount === 3 && cronStruct.time.text[0] === '每') {
-        // 避免 '每日每分钟' 出现
-        cronStruct.date.text = '';
+    // 时间以「每」开头(每分钟/每隔N分钟/每隔N小时等)时已隐含「每天」,去掉日期末尾多余的「每日」
+    if (cronStruct.time.text[0] === '每' && cronStruct.date.text.endsWith('每日')) {
+        cronStruct.date.text = cronStruct.date.text.slice(0, -'每日'.length);
     }
 
     return cronStruct.date.text + cronStruct.time.text;
@@ -75,11 +75,11 @@ function compileTimePart(time) {
             if (time.minute.hasStepping) {
                 const parts = time.minute.raw.split('/');
                 if (time.minute.hasRange || time.minute.hasList) {
-                    time.text = '每小时的第' + parts[0] + '分钟(间隔' + parts[1] + '分钟)';
+                    time.text = '每小时的第' + parts[0] + '分钟（间隔' + parts[1] + '分钟）';
                 } else if (parts[0] === '*') {
                     time.text = '每隔' + parts[1] + '分钟';
                 } else {
-                    time.text = '每小时的第' + parts[0] + '分钟起,每隔' + parts[1] + '分钟';
+                    time.text = '每小时的第' + parts[0] + '分钟起，每隔' + parts[1] + '分钟';
                 }
             } else {
                 time.text = '每小时的第' + time.minute.raw + '分钟';
@@ -88,9 +88,11 @@ function compileTimePart(time) {
             if (time.hour.hasStepping) {
                 const parts = time.hour.raw.split('/');
                 if (time.hour.hasRange || time.hour.hasList) {
-                    time.text = parts[0] + '时的每一分钟(间隔' + parts[1] + '小时)';
-                } else {
+                    time.text = parts[0] + '时的每一分钟（间隔' + parts[1] + '小时）';
+                } else if (parts[0] === '*') {
                     time.text = '每隔' + parts[1] + '小时';
+                } else {
+                    time.text = parts[0] + '时起，每隔' + parts[1] + '小时';
                 }
             } else {
                 time.text = time.hour.raw + '时的每一分钟';
@@ -102,9 +104,11 @@ function compileTimePart(time) {
             if (time.hour.hasStepping) {
                 const parts = time.hour.raw.split('/');
                 if (time.hour.hasList || time.hour.hasRange) {
-                    hourString = parts[0] + '时(间隔' + parts[1] + '小时)';
-                } else {
+                    hourString = parts[0] + '时（间隔' + parts[1] + '小时）';
+                } else if (parts[0] === '*') {
                     hourString = '每' + parts[1] + '小时';
+                } else {
+                    hourString = parts[0] + '时起，每隔' + parts[1] + '小时';
                 }
             } else {
                 hourString = time.hour.raw + '时';
@@ -114,9 +118,11 @@ function compileTimePart(time) {
             if (time.minute.hasStepping) {
                 const parts = time.minute.raw.split('/');
                 if (time.minute.hasRange || time.minute.hasList) {
-                    minuteString = '第' + parts[0] + '分钟(间隔' + parts[1] + '分钟)';
-                } else {
+                    minuteString = '第' + parts[0] + '分钟（间隔' + parts[1] + '分钟）';
+                } else if (parts[0] === '*') {
                     minuteString = '每' + parts[1] + '分钟';
+                } else {
+                    minuteString = '第' + parts[0] + '分钟起，每隔' + parts[1] + '分钟';
                 }
             } else {
                 minuteString = '第' + time.minute.raw + '分钟';
@@ -154,7 +160,13 @@ function parseMonthToken(month) {
     });
     if (month.indexOf('/') >= 0) {
         const parts = month.split('/');
-        return parts[0] === '*' ? ('每' + parts[1] + '月') : (parts[0] + '月(间隔' + parts[1] + '月)');
+        if (parts[0] === '*') {
+            return '每' + parts[1] + '个月';
+        } else if (parts[0].indexOf('-') >= 0 || parts[0].indexOf(',') >= 0) {
+            return parts[0] + '月每' + parts[1] + '个月';
+        } else {
+            return parts[0] + '月起每' + parts[1] + '个月';
+        }
     }
 
     return month + '月';
@@ -163,7 +175,7 @@ function parseMonthToken(month) {
 function parseDayInMonthToken(dayInMonth) {
     if (dayInMonth.indexOf('/') >= 0) {
         const parts = dayInMonth.split('/');
-        return parts[0] === '*' ? ('每' + parts[1] + '日') : (parts[0] + '日(间隔' + parts[1] + '日)');
+        return parts[0] === '*' ? ('每' + parts[1] + '日') : (parts[0] + '日（间隔' + parts[1] + '日）');
     }
     return dayInMonth + '日';
 }
@@ -172,6 +184,10 @@ function parseDayInWeekToken(dayInWeek) {
     dayInWeekMap.forEach((x, i) => {
         dayInWeek = dayInWeek.replace(x, i.toString());
     });
+    if (dayInWeek.indexOf('/') >= 0) {
+        // 周字段只有 0-6,步进直接展开成具体周几列表,避免「每2周」与隔周语义冲突
+        return '周' + expandDayInWeekStepping(dayInWeek).map(i => dayInWeekNameMap[i]).join('、');
+    }
     if (dayInWeek.indexOf(',') >= 0) {
         if (dayInWeek.indexOf('-') < 0) {
             // 周三、四、六
@@ -186,6 +202,30 @@ function parseDayInWeekToken(dayInWeek) {
     }
 
     return '周' + dayInWeekNameMap[Number(dayInWeek)];
+}
+
+function expandDayInWeekStepping(spec) {
+    const [rangePart, stepPart] = spec.split('/');
+    const step = Number(stepPart);
+    let start, end;
+    if (rangePart === '*') {
+        start = 0;
+        end = 6;
+    } else if (rangePart.indexOf('-') >= 0) {
+        const bounds = rangePart.split('-');
+        start = Number(bounds[0]);
+        end = Number(bounds[1]);
+    } else {
+        // m/n 表示从 m 起到周末(6)
+        start = Number(rangePart);
+        end = 6;
+    }
+
+    const indices = [];
+    for (let v = start; v <= end; v += step) {
+        indices.push(v);
+    }
+    return indices;
 }
 
 const dayInWeekNameMap = ['日', '一', '二', '三', '四', '五', '六'];
