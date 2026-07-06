@@ -1,8 +1,7 @@
 # Deploys the interactive demo (index.html) to GitHub Pages. The demo imports
-# the library source (index.js) directly via a relative ESM path, so the
-# published site always reflects the current source on main. The deploy
-# artifact is assembled from just those two files — node_modules, the spec,
-# and package metadata are intentionally not published.
+# the built library (dist/index.js), so the deploy runs `npm run build` first,
+# then assembles the site from index.html plus dist/index.js. node_modules,
+# the spec, and package metadata are intentionally not published.
 #
 # One-time setup: Settings → Pages → Source = "GitHub Actions".
 
@@ -13,7 +12,10 @@ on:
     branches: [main]
     paths:
       - 'index.html'
-      - 'index.js'
+      - 'src/**'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -34,10 +36,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - name: Assemble site
         run: |
-          mkdir -p _site
-          cp index.html index.js _site/
+          mkdir -p _site/dist
+          cp index.html _site/
+          cp dist/index.js _site/dist/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

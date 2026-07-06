@@ -24,4 +24,4 @@ humanizeCronInChinese('0 0 * * */2'); // 每周日、二、四、六00:00
 humanizeCronInChinese('0 0 * * MON-FRI/2'); // 每周一、三、五00:00
 ```
 
-更多示例请查看测试文件：[index.spec.js](https://github.com/ikesnowy/cron-chinese/blob/main/spec/index.spec.js)
+更多示例请查看测试文件：[index.spec.ts](https://github.com/ikesnowy/cron-chinese/blob/main/spec/index.spec.ts)
