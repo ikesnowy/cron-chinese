@@ -98,7 +98,7 @@ describe('Linux crontab translation tests', () => {
   });
   it('day in month stepping with start', () => {
     expect(humanizeCronInChinese('0 0 3/2 * *')).toBe(
-      '每月3日（间隔2日）00:00',
+      '每月3日起，每隔2日00:00',
     );
   });
   it('month stepping from any', () => {
@@ -197,5 +197,25 @@ describe('Linux crontab translation tests', () => {
   });
   it('keeps 每日 when time is a clock time', () => {
     expect(humanizeCronInChinese('0 0 * 6 *')).toBe('6月每日00:00');
+  });
+  it('day in week 7 as sunday', () => {
+    expect(humanizeCronInChinese('0 0 * * 7')).toBe('每周日00:00');
+  });
+  it('day in week range ending at 7', () => {
+    expect(humanizeCronInChinese('0 0 * * 5-7')).toBe('每周五~周日00:00');
+  });
+  it('day in week list containing 7', () => {
+    expect(humanizeCronInChinese('0 0 * * 6,7')).toBe('每周六、日00:00');
+  });
+  it('day in week full range 0-7', () => {
+    expect(humanizeCronInChinese('0 0 * * 0-7')).toBe('每周日~周六00:00');
+  });
+  it('day in week stepping from 7', () => {
+    expect(humanizeCronInChinese('0 0 * * 7/2')).toBe(
+      '每周日、二、四、六00:00',
+    );
+  });
+  it('day in week range stepping over 7', () => {
+    expect(humanizeCronInChinese('0 0 * * 5-7/2')).toBe('每周五、日00:00');
   });
 });
